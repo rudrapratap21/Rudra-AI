@@ -8,7 +8,6 @@ const stopListenButton = document.getElementById("stopListenButton");
 
 let isListening = false;
 
-// Start Listening
 function startListening() {
     output.innerText = "Listening...";
     arc.style.background = "radial-gradient(circle, #0f0, #000)";
@@ -17,7 +16,6 @@ function startListening() {
     stopListenButton.style.display = "block";
 }
 
-// Recognition Result
 recognition.onresult = function(event) {
     const command = event.results[0][0].transcript.toLowerCase();
     output.innerText = "You said: " + command;
@@ -31,7 +29,6 @@ recognition.onresult = function(event) {
     }
 };
 
-// Speak
 function speak(text) {
     const speech = new SpeechSynthesisUtterance(text);
     speech.voice = window.speechSynthesis.getVoices()[0];
@@ -46,15 +43,50 @@ function speak(text) {
     };
 }
 
-// Process Command
 function processCommand(command) {
+    // First Priority: Search on YouTube
+    if (command.includes("search on youtube")) {
+        const query = command.replace("search on youtube", "").trim();
+        window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`);
+        speak(`Searching YouTube for ${query}`);
+    }
+    // Second Priority: Search from Wikipedia
+    else if (command.includes("from wikipedia search")) {
+        const query = command.replace("from wikipedia search", "").trim();
+        fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.extract) {
+                    speak(data.extract);
+                } else {
+                    speak("Sorry, I could not find anything on Wikipedia.");
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                speak("There was an error accessing Wikipedia.");
+            });
+    }
+    // Third Priority: Search on Google
+    else if (command.startsWith("search")) {
+        const query = command.replace("search", "").trim();
+        window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
+        speak(`Searching Google for ${query}`);
+    }
     // Greeting
-    if (command.includes("start") || command.includes("start jarvis")) {
+    else if (command.includes("start") || command.includes("start jarvis") || command.includes("hello jarvis") || command.includes("hello")) {
         const hour = new Date().getHours();
         let greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
         speak(`${greet} boss, how can I help you today?`);
     }
-
+    // Who are you
+    else if (command.includes("who are you")) {
+        speak("I am Jarvis 2.0, your AI assistant.");
+    }
+    // Who is your boss
+    else if (command.includes("who is your boss")) {
+        speak("Rudra Pratap is my boss.");
+    }
     // Time & Date
     else if (command.includes("time") || command.includes("date") || command.includes("day")) {
         const now = new Date();
@@ -63,67 +95,64 @@ function processCommand(command) {
         const timeString = now.toLocaleTimeString();
         speak(`Today is ${dateString}. The time is ${timeString}`);
     }
-
-    // Search Google
-    else if (command.startsWith("search ")) {
-        const query = command.replace("search", "").trim();
-        window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
-        speak(`Searching on Google for ${query}`);
-    }
-
-    // Search YouTube
-    else if (command.startsWith("search on youtube ")) {
-        const query = command.replace("search on youtube", "").trim();
-        window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, '_blank');
-        speak(`Searching on YouTube for ${query}`);
-    }
-
-    // Search Wikipedia
-    else if (command.startsWith("from wikipedia search ")) {
-        const query = command.replace("from wikipedia search", "").trim();
-        searchWikipedia(query);
-    }
-
     // Goodbye
     else if (command.includes("goodbye") || command.includes("shut down") || command.includes("bye")) {
         speak("Shutting down. Goodbye, boss.");
         isListening = false;
         stopListenButton.style.display = "none";
     }
+    // Math Calculation
+    else if (command.startsWith("calculate")) {
+        let expression = command
+            .replace("calculate", "")
+            .replace(/plus/g, '+')
+            .replace(/minus/g, '-')
+            .replace(/times|into/g, '*')
+            .replace(/by|divided by/g, '/');
+        try {
+            let result = eval(expression);
+            speak(`The result is ${result}`);
+        } catch {
+            speak("Sorry, I couldn't calculate that.");
+        }
+    }
+    // Open Website
+    else if (command.startsWith("open")) {
+        let site = command.replace("open", "").trim();
+        let url;
 
-    // Unknown
+        if (site.includes("youtube") || site.includes("yt")) {
+            url = "https://www.youtube.com";
+        } else if (site.includes("google")) {
+            url = "https://www.google.com";
+        } else if (site.includes("instagram")) {
+            url = "https://www.instagram.com";
+        } else if (site.includes("facebook")) {
+            url = "https://www.facebook.com";
+        } else if (site.includes("twitter")) {
+            url = "https://www.twitter.com";
+        } else {
+            url = "https://www." + site + ".com";
+        }
+
+        if (url) {
+            window.open(url, '_blank');
+            speak(`Opening ${site}.`);
+        } else {
+            speak(`Sorry, I could not open ${site}`);
+        }
+    }
     else {
         speak("Sorry, I did not understand that.");
     }
 }
 
-// Wikipedia Search Function
-function searchWikipedia(query) {
-    const apiUrl = `https://en.wikipedia.org/w/api.php?origin=*&action=query&list=search&format=json&srsearch=${encodeURIComponent(query)}`;
-
-    fetch(apiUrl)
-        .then(response => response.json())
-        .then(data => {
-            if (data.query.search.length > 0) {
-                const snippet = data.query.search[0].snippet.replace(/<\/?[^>]+(>|$)/g, ""); // Remove HTML tags
-                speak(`According to Wikipedia, ${snippet}`);
-            } else {
-                speak("Sorry, I couldn't find anything on Wikipedia.");
-            }
-        })
-        .catch(error => {
-            speak("Sorry, an error occurred while searching Wikipedia.");
-        });
-}
-
-// Stop Speaking
 stopButton.addEventListener("click", () => {
     window.speechSynthesis.cancel();
     stopButton.style.display = "none";
     arc.style.background = "radial-gradient(circle, #0f0, #000)";
 });
 
-// Stop Listening
 stopListenButton.addEventListener("click", () => {
     isListening = false;
     recognition.stop();
