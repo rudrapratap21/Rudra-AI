@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS - Virtual Assistant</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Time and Date Widget -->
+    <div class="time-widget">
+        <span id="day"></span> | <span id="date"></span> | <span id="time"></span>
+    </div>
+    <div class="image-container">
+        <div class="image">
+            <img src="https://i.gifer.com/ApiG.gif" alt="image">
+        </div>    <div class="container">
+        <h1>J A R V I S</h1>
+        <p>I’m your virtual assistant, JARVIS. How may I help you?</p>
+
+        <!-- Command Input Section -->
+        <div class="input-container">
+            <input type="text" id="commandInput" class="text-command" placeholder="Type your command..." />
+            <button class="send" id="sendButton">Send</button>
+        </div>
+
+        <!-- Voice Command -->
+        <button class="talk" id="voiceButton"><i class="fas fa-microphone-alt"></i> Speak</button>
+
+        <!-- Volume and Mute Buttons -->
+        <button class="volume" id="volumeButton">🔉 Volume</button>
+        <button class="mute" id="muteButton">🔇 Mute</button>
+
+        <!-- Background Music -->
+        <audio id="background-music" loop autoplay>
+            <source src="background-music.mp3" type="audio/mp3">
+        </audio>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
