@@ -5,168 +5,135 @@ const output = document.getElementById("output");
 const stopButton = document.getElementById("stopButton");
 const arc = document.getElementById("reactor");
 const stopListenButton = document.getElementById("stopListenButton");
+const chatContainer = document.getElementById("chat-container");
+const chatLog = document.getElementById("chat-log");
+const chatInput = document.getElementById("chat-input");
+const deactivateBtn = document.getElementById("deactivate-jarvis");
 
 let isListening = false;
+let jarvisActive = true;
+
+const googleApiKey = 'AIzaSyB6FdenBnLSIXTyMt2yP-6YJqaBWa3sZLA';
+const googleEngineId = '86a7e4f44757149f0';
 
 function startListening() {
-    output.innerText = "Listening...";
-    arc.style.background = "radial-gradient(circle, #0f0, #000)";
-    recognition.start();
-    isListening = true;
-    stopListenButton.style.display = "block";
+  if (!jarvisActive) return;
+  output.innerText = "Listening...";
+  arc.style.background = "radial-gradient(circle, #0f0, #000)";
+  recognition.start();
+  isListening = true;
+  stopListenButton.style.display = "block";
 }
 
-recognition.onresult = function(event) {
-    const command = event.results[0][0].transcript.toLowerCase();
-    output.innerText = "You said: " + command;
-    processCommand(command);
+recognition.onresult = function (event) {
+  const command = event.results[0][0].transcript.toLowerCase();
+  output.innerText = "You: " + command;
+  appendToChat("You: " + command);
+  processCommand(command);
 
-    if (isListening && !command.includes("goodbye") && !command.includes("shut down") && !command.includes("bye")) {
-        recognition.start();
-    } else {
-        isListening = false;
-        stopListenButton.style.display = "none";
-    }
+  if (isListening && !command.includes("goodbye")) {
+    recognition.start();
+  } else {
+    isListening = false;
+    stopListenButton.style.display = "none";
+  }
 };
 
 function speak(text) {
-    const speech = new SpeechSynthesisUtterance(text);
-    speech.voice = window.speechSynthesis.getVoices()[0];
-    speech.pitch = 1;
-    speech.rate = 1;
-    arc.style.background = "radial-gradient(circle, red, #000)";
-    stopButton.style.display = "block";
-    window.speechSynthesis.speak(speech);
-    speech.onend = () => {
-        arc.style.background = "radial-gradient(circle, #0f0, #000)";
-        stopButton.style.display = "none";
-    };
+  const speech = new SpeechSynthesisUtterance(text);
+  speech.voice = window.speechSynthesis.getVoices()[0];
+  speech.pitch = 1;
+  speech.rate = 1;
+  arc.style.background = "radial-gradient(circle, red, #000)";
+  stopButton.style.display = "block";
+  window.speechSynthesis.speak(speech);
+  appendToChat("Jarvis: " + text);
+  speech.onend = () => {
+    arc.style.background = "radial-gradient(circle, #0f0, #000)";
+    stopButton.style.display = "none";
+  };
 }
 
 function processCommand(command) {
-    // First Priority: Search on YouTube
-    if (command.includes("search on youtube")) {
-        const query = command.replace("search on youtube", "").trim();
-        window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`);
-        speak(`Searching YouTube for ${query}`);
-    }
-    // Second Priority: Search from Wikipedia
-    else if (command.includes("from wikipedia search")) {
-        const query = command.replace("from wikipedia search", "").trim();
-        fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.extract) {
-                    speak(data.extract);
-                } else {
-                    speak("Sorry, I could not find anything on Wikipedia.");
-                }
-            })
-            .catch(error => {
-                console.error(error);
-                speak("There was an error accessing Wikipedia.");
-            });
-    }
-    // Third Priority: Search on Google
-    else if (command.startsWith("search")) {
-        const query = command.replace("search", "").trim();
-        window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
-        speak(`Searching Google for ${query}`);
-    }
-    // Greeting
-    else if (command.includes("start") || command.includes("start jarvis") || command.includes("hello jarvis") || command.includes("hello")) {
-        const hour = new Date().getHours();
-        let greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-        speak(`${greet} boss, how can I help you today?`);
-    }
-    // Who are you
-    else if (command.includes("who are you")) {
-        speak("I am Jarvis 2.0, your AI assistant.");
-    }
-    // Who is your boss
-    else if (command.includes("who is your boss")) {
-        speak("Rudra Pratap is my boss.");
-    }
-    // Time & Date
-    else if (command.includes("time") || command.includes("date") || command.includes("day")) {
-        const now = new Date();
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const dateString = now.toLocaleDateString(undefined, options);
-        const timeString = now.toLocaleTimeString();
-        speak(`Today is ${dateString}. The time is ${timeString}`);
-    }
-    // Goodbye
-    else if (command.includes("goodbye") || command.includes("shut down") || command.includes("bye")) {
-        speak("Shutting down. Goodbye, boss.");
-        isListening = false;
-        stopListenButton.style.display = "none";
-    }
-    // Math Calculation
-    else if (command.startsWith("calculate")) {
-        let expression = command
-            .replace("calculate", "")
-            .replace(/plus/g, '+')
-            .replace(/minus/g, '-')
-            .replace(/times|into/g, '*')
-            .replace(/by|divided by/g, '/');
-        try {
-            let result = eval(expression);
-            speak(`The result is ${result}`);
-        } catch {
-            speak("Sorry, I couldn't calculate that.");
-        }
-    }
-    // Open Website
-    else if (command.startsWith("open")) {
-        let site = command.replace("open", "").trim();
-        let url;
+  if (!jarvisActive) return;
 
-        if (site.includes("youtube") || site.includes("yt")) {
-            url = "https://www.youtube.com";
-        } else if (site.includes("google")) {
-            url = "https://www.google.com";
-        } else if (site.includes("instagram")) {
-            url = "https://www.instagram.com";
-        } else if (site.includes("facebook")) {
-            url = "https://www.facebook.com";
-        } else if (site.includes("twitter")) {
-            url = "https://www.twitter.com";
-        } else {
-            url = "https://www." + site + ".com";
-        }
-
-        if (url) {
-            window.open(url, '_blank');
-            speak(`Opening ${site}.`);
-        } else {
-            speak(`Sorry, I could not open ${site}`);
-        }
+  if (command.startsWith("search") || command.startsWith("google")) {
+    const query = command.replace(/^(search|google)/, "").trim();
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
+    speak(`Searching Google for ${query}`);
+  } else if (command.startsWith("open")) {
+    const site = command.replace("open", "").trim().replace(/\s+/g, '');
+    window.open(`https://${site}`);
+    speak(`Opening ${site}`);
+  } else if (command.startsWith("according to google") || command.startsWith("calculate")) {
+    const query = command.replace("according to google", "").replace("calculate", "").trim();
+    googleSearch(query);
+  } else if (command.startsWith("remind me after")) {
+    const minutes = parseInt(command.replace("remind me after", "").trim());
+    if (!isNaN(minutes)) {
+      speak(`Reminder set for ${minutes} minutes.`);
+      setTimeout(() => speak("Reminder: Your time is up!"), minutes * 60000);
+    } else {
+      speak("Sorry, I couldn't understand the time.");
     }
-    else {
-        speak("Sorry, I did not understand that.");
-    }
+  } else if (command.includes("hello")) {
+    greet();
+  } else if (command.includes("who is your boss")) {
+    speak("Rudra Pratap is my boss.");
+  } else if (command.includes("goodbye") || command.includes("shut down")) {
+    speak("Goodbye, shutting down.");
+    jarvisActive = false;
+  } else {
+    speak("Sorry, I didn't understand that.");
+  }
 }
 
-stopButton.addEventListener("click", () => {
-    window.speechSynthesis.cancel();
-    stopButton.style.display = "none";
-    arc.style.background = "radial-gradient(circle, #0f0, #000)";
-});
-
-stopListenButton.addEventListener("click", () => {
-    isListening = false;
-    recognition.stop();
-    stopListenButton.style.display = "none";
-    arc.style.background = "radial-gradient(circle, #0f0, #000)";
-    output.innerText = "Listening Stopped";
-});
-
-// DateTime Widget
-function updateDateTime() {
-    const now = new Date();
-    const options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
-    const formatted = `${now.toLocaleDateString(undefined, options)} - ${now.toLocaleTimeString()}`;
-    document.getElementById("dateTimeDisplay").innerText = formatted;
+function googleSearch(query) {
+  fetch(`https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&key=${googleApiKey}&cx=${googleEngineId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.items && data.items.length > 0) {
+        speak("I found a result: " + data.items[0].snippet);
+      } else {
+        speak("Sorry, no result found.");
+      }
+    })
+    .catch(() => speak("There was an error fetching Google results."));
 }
-setInterval(updateDateTime, 1000);
-updateDateTime();
+
+function greet() {
+  const hour = new Date().getHours();
+  const greetText = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  speak(`${greetText} boss, how can I assist you today?`);
+}
+
+function appendToChat(message) {
+  const msg = document.createElement("div");
+  msg.textContent = message;
+  chatLog.appendChild(msg);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+document.getElementById("toggle-chat").addEventListener("click", () => {
+  chatContainer.style.display = chatContainer.style.display === "none" ? "flex" : "none";
+});
+
+deactivateBtn.addEventListener("click", () => {
+  speak("Goodbye, shutting down now.");
+  jarvisActive = false;
+  output.innerText = "Jarvis is deactivated.";
+  stopButton.style.display = "none";
+  stopListenButton.style.display = "none";
+});
+
+chatInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    const command = chatInput.value.trim();
+    if (command) {
+      output.innerText = "You: " + command;
+      appendToChat("You: " + command);
+      processCommand(command.toLowerCase());
+      chatInput.value = "";
+    }
+  }
+});
