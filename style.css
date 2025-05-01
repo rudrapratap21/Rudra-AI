@@ -124,3 +124,25 @@ footer {
   cursor: pointer;
   z-index: 1000;
 }
+.orb-container {
+  position: absolute;
+  left: 5%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  box-shadow: 0 0 30px 15px rgba(0, 255, 255, 0.6);
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.orb-gif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
